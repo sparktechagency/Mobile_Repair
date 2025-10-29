@@ -36,7 +36,7 @@ const otpSendEmail = async ({
   );
 };
 
- const sendBookingNotificationEmail = async ({
+ const sendNotificationEmail = async ({
   sentTo,
   subject,
   userName,
@@ -53,4 +53,4 @@ const otpSendEmail = async ({
   );
 };
 
-export { otpSendEmail, sendBookingNotificationEmail };
+export { otpSendEmail, sendNotificationEmail };

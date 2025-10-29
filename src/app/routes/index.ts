@@ -5,6 +5,7 @@ import { otpRoutes } from "../modules/otp/otp.routes";
 import { settingsRoutes } from "../modules/setting/setting.route";
 import { notificationRoutes } from "../modules/notifications/notifications.route";
 import { ServiceOrderRoutes } from "../modules/serviceOrder/serviceOrder.route";
+import { managePriceRoutes } from "../modules/managePrice/managePrice.route";
 
 const router = Router();
 
@@ -28,6 +29,10 @@ const moduleRoutes = [
   {
      path: "/notifications",
      route: notificationRoutes
+  },
+  {
+     path: "/managePrice",
+     route: managePriceRoutes
   },
   {
      path: "/serviceOrder",

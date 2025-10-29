@@ -1,61 +1,49 @@
 import { Schema, model } from 'mongoose';
 import { INotification } from './notifications.interface';
 
-
 const NotificationSchema = new Schema<INotification>(
   {
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'User', // Reference to the User model
+      ref: 'User',
       required: true,
     },
     receiverId: {
       type: Schema.Types.ObjectId,
-      ref: 'User', // Reference to the User model
+      ref: 'User',
       required: true,
     },
+
+    // Unified message object
     message: {
-      type: {
-        fullName: {type: String, default: false},
-        image: { type: String, default: "" }, // Store the image URL or path
-        text: { type: String, required: true },  // Store additional data
-        photos: { type: [String], default: [] }, // Optional array of photo URLs or paths
-      },
-      required: true, // The message object itself is required
+      fullName: { type: String, default: "" },
+      image: { type: String, default: "" },
+      text: { type: String, required: true },
+      photos: { type: [String], default: [] },
     },
+
     type: {
       type: String,
-      enum: ['DirectBookingRequest', // user → photographer/videographer
-        'CustomBookingRequest', // user → photographer/videographer
-        'BookingAccepted', // photographer/videographer → user
-        'BookingRejected',
-        'BookingPaymentPending',
-        'BookingProcessing',
-        "DeliveryRequest",
-        "DeliveryAccepted",
-        "OrderDeclined",
-        'BookingCompleted',
-        "DirectBookingInProgress",
-        "CustomBookingInProgress",
-        'WorkshopAdded',
-        'PackageAdded',
-        'GearAdded',
-        'AdminNotice',
-        'added'
+      enum: [
+        'technicianPendingApproval', // user → technician
+        'serviceOrderPending',       // user → technician
+        'serviceOrderAccepted',      // technician → user
+        'technicianVerified',
+        'technicianDeclined',
+        'serviceOrderCompleted'
       ],
       required: true,
     },
+
     isRead: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt automatically
+    timestamps: true,
   }
 );
 
-// Create and export the Notification model
 const Notification = model<INotification>('Notification', NotificationSchema);
-
 export default Notification;

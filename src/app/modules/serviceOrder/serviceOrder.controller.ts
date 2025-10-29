@@ -95,11 +95,11 @@ const getPendingServiceOrders = catchAsync(async (req, res) => {
 
 const getMyMonthlyServiceStats = catchAsync(async (req, res) => {
 
-  const { orderId } = req.params;
+  const {userId} = req.user;
   const year = req.query.year ? Number(req.query.year) : new Date().getFullYear();
 
 
-  const result  = await ServiceOrderService.getMyMonthlyServiceStats(orderId, year);
+  const result  = await ServiceOrderService.getMyMonthlyServiceStats(userId, year);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

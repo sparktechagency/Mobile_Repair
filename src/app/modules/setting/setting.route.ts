@@ -9,6 +9,7 @@ settingsRoutes
     .get("/privacy", settingsController.getPrivacyPolicy)
     .get("/termAndConditions", settingsController.getTermConditions)
     .get("/aboutUs", settingsController.getAboutUs)
+    .get("/", settingsController.getSettings)
     .get("/:key", settingsController.getDynamicDocuments)
     // Route to create or update the privacy policy
     .put("/", settingsController.updateSettingsByKey);

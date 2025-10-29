@@ -12,13 +12,13 @@ import { TPurposeType } from '../otp/otp.interface';
 import { createToken, verifyToken } from '../../utils/tokenManage';
 import Notification from '../notifications/notifications.model';
 import mongoose, { Types } from 'mongoose';
-import { getAdminId } from '../../DB/adminStrore';
+import { getAdminData, getAdminId } from '../../DB/adminStrore';
 import { emitNotification } from '../../../socketIo';
 import { USER_ROLE, UserRole } from './user.constants';
 import fs from 'fs';
 import path from 'path';
-import { otpSendEmail } from '../../utils/emailNotification';
-
+import { otpSendEmail, sendNotificationEmail } from '../../utils/emailNotification';
+import { ServiceOrder } from '../serviceOrder/serviceOrder.model';
 
 export type IFilter = {
   searchTerm?: string;
@@ -190,21 +190,48 @@ const otpVerifyAndCreateUser = async ({
               session.endSession();
 
 
-              const notificationData = {
-                userId: user[0]._id,
-                receiverId: getAdminId(),
-                userMsg: {
-                  fullName: user[0].name || "",
-                  image: user[0].profileImage || "", // Placeholder image URL (adjust this)
-                  text: "New user added in your app"
-                },
-                type: 'added',
-              } as any;
+              const notificationData = {   
+                    userId: new Types.ObjectId(user[0]._id),    // Sender = Technician user
+                    receiverId: new Types.ObjectId(getAdminId()), // Receiver = Admin
+                    message: {
+                      fullName: user[0].name || "",
+                      image: user[0].profileImage || "",
+                      text: "A new technical user has registered and is pending approval.",
+                      photos: [],
+                    },
 
-              // emit notification in background, don’t block response
-              emitNotification(notificationData).catch(err => {
-                console.error("Notification emit failed:", err);
-              });
+                    type: "technicianPendingApproval",
+                  };
+
+                  // Emit notification asynchronously
+                  emitNotification(notificationData).catch(err => {
+                    console.error("Notification emit failed:", err);
+                  });
+
+
+              const admin = getAdminData() as any;
+                if (!admin || !admin?.email) return;
+
+                const subject = "New Technician Registration Pending Approval";
+                const messageText = `Hello Admin,
+
+              A new technician has registered and is pending your approval.
+
+              Technician Details:
+              Name: ${user[0].name || "N/A"}
+              Email: ${user[0].email || "N/A"}
+              Phone: ${user[0].phone || "N/A"}
+
+              Please review and approve this user in the admin panel.`;
+
+                await sendNotificationEmail({
+                  sentTo: admin.email,
+                  subject,
+                  userName: "Admin",
+                  messageText,
+                }).catch(err => console.error("Failed to send email to admin:", err.message));
+              
+
               // Generate access token
               const jwtPayload = {
                 userId: user[0]._id.toString(),
@@ -290,6 +317,25 @@ const verifyTechnicianUserById = async (userId: string) => {
     throw new AppError(httpStatus.BAD_REQUEST, 'User verification update failed');
   }
 
+  // ✅ Send Notification to Technician (receiver)
+  const notificationPayload = {
+    userId: new Types.ObjectId(getAdminId()),  // Sender → admin
+    receiverId: new Types.ObjectId(user._id),  // Receiver → verified technician
+    message: {
+      fullName: "Admin",
+      image: "",
+      text: "Congratulations! Your profile has been verified successfully.",
+      photos: [],
+    },
+    type: "technicianVerified",
+  };
+
+  // Fire & Forget (background)
+  // Emit notification asynchronously
+  emitNotification(notificationPayload).catch(err => {
+    console.error("Notification emit failed:", err);
+  });
+
   return user;
 };
 
@@ -307,6 +353,27 @@ const declineTechnicianUserById = async (userId: string, reason?: string) => {
   if (!user) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Failed to decline the professional user');
   }
+
+  // ✅ Send Notification to Technician (receiver)
+  const notificationPayload = {
+    userId: new Types.ObjectId(getAdminId()),  // Sender = Admin
+    receiverId: new Types.ObjectId(user._id),   // Receiver = declined technician
+    message: {
+      fullName: "Admin",
+      image: "",
+      text: reason
+        ? `Your profile has been declined. Reason: ${reason}`
+        : "Your profile has been declined by the admin.",
+      photos: [],
+    },
+    type: "technicianDeclined",
+  };
+
+  // Fire & Forget (background)
+  // Emit notification asynchronously
+  emitNotification(notificationPayload).catch(err => {
+    console.error("Notification emit failed:", err);
+  });
 
   return user;
 };
@@ -393,6 +460,72 @@ const getUserById = async (id: string) => {
 };
 
 
+const getTotalStatistics = async (year: number) => {
+  // ✅ Default current year
+  if (!year) year = new Date().getFullYear();
+
+  
+  // ✅ Native Date boundaries
+  const start = new Date(year, 0, 1, 0, 0, 0);     // Jan 1st, 00:00:00
+  const end = new Date(year, 11, 31, 23, 59, 59); // Dec 31st, 23:59:59
+
+  // ✅ Common match query applied on both collections
+  const matchByYear = {
+    createdAt: { $gte: start, $lte: end },
+  };
+
+  // ✅ Aggregation for technicians (verified + pending in one call)
+  const technicianStats = await User.aggregate([
+    { $match: { role: USER_ROLE.TECHNICIAN, ...matchByYear } },
+    { $group: { _id: "$adminVerified", count: { $sum: 1 } } },
+  ]);
+
+  // ✅ Convert to key-value results
+  const totalTechnicians =
+    technicianStats.find((t) => t._id === "verified")?.count || 0;
+  const totalPendingTechnicians =
+    technicianStats.find((t) => t._id === "pending")?.count || 0;
+
+  // ✅ Single call for total service orders
+  const totalServiceOrders = await ServiceOrder.countDocuments(matchByYear);
+
+  return {
+    year,
+    totalTechnicians,
+    totalPendingTechnicians,
+    totalServiceOrders,
+  };
+};
+
+const getMonthlyStatistics = async (year: number) => {
+  const monthlyStats = [];
+
+  for (let month = 0; month < 12; month++) {
+    const monthStart = new Date(year, month, 1, 0, 0, 0);
+    const monthEnd = new Date(year, month + 1, 1, 0, 0, 0);
+
+    // 🧮 Count technicians verified in this month
+    const totalTechnicians = await User.countDocuments({
+      role: USER_ROLE.TECHNICIAN,
+      adminVerified: "verified",
+      createdAt: { $gte: monthStart, $lt: monthEnd },
+    });
+
+    // 🧮 Count service orders created in this month
+    const totalServiceOrders = await ServiceOrder.countDocuments({
+      isDeleted: false,
+      createdAt: { $gte: monthStart, $lt: monthEnd },
+    });
+
+    monthlyStats.push({
+      month: month + 1, // 1-12
+      totalTechnicians,
+      totalServiceOrders,
+    });
+  }
+
+  return { year, monthlyStats };
+};
 
 
 
@@ -485,6 +618,8 @@ export const userService = {
   getAllTechnicians,
   verifyTechnicianUserById,
   getPendingTechnicians,
+  getTotalStatistics,
+  getMonthlyStatistics,
   getMyProfile,
   getAdminProfile,
   getUserById,

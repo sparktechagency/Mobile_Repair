@@ -1,12 +1,21 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-// Interface for Privacy Policy
+// Interface for Settings
 export interface ISettings extends Document {
   content: string;
-  key: "privacyPolicy"|"aboutUs"|"termsService"|"gdpr"|"howOrderingWorks"|"howItWorks"|"frameworkAgreement";
+  key:
+    | "mrpRepairWaiver"
+    | "repairLiability"
+    | "warrentyCoverage"
+    | "customerResponsibilities"
+    | "pricing"
+    | "importantNotice"
+    | "privacyPolicy"
+    | "aboutUs"
+    | "termsService";
 }
 
-// Privacy Policy Schema
+// Settings Schema
 const settingsSchema = new Schema<ISettings>(
   {
     content: {
@@ -15,13 +24,22 @@ const settingsSchema = new Schema<ISettings>(
     },
     key: {
       type: String,
-      enum: [ "privacyPolicy","aboutUs","termsService","gdpr","howOrderingWorks","howItWorks","frameworkAgreement" ], // enum ensures that only these values are valid
+      enum: [
+        "mrpRepairWaiver",
+        "repairLiability",
+        "warrentyCoverage",
+        "customerResponsibilities",
+        "pricing",
+        "importantNotice",
+        "privacyPolicy",
+        "aboutUs",
+        "termsService",
+      ],
       required: true,
     },
   },
   { timestamps: true }
 );
-
 
 const Settings = mongoose.model<ISettings>("Settings", settingsSchema);
 

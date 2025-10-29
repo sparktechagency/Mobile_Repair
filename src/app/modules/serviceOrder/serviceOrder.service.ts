@@ -5,14 +5,45 @@ import AppError from "../../error/AppError";
 import mongoose, { Types } from "mongoose";
 import QueryBuilder from "../../builder/QueryBuilder";
 import { computeTrend, shiftDays, shiftMonths, shiftWeeks, startOfMonth, startOfToday, startOfWeek } from "./serviceOrder.utils";
+import { User } from "../user/user.model";
+import { sendNotificationEmail } from "../../utils/emailNotification";
+
 
 
 
 const createServiceOrder = async (payload: IServiceOrder) => {
+  // 1️⃣ Create the service order
   const order = await ServiceOrder.create({
     ...payload,
-    statusHistory: [{ status: "pending" }],
+    statusHistory: [{ status: "pending", timestamp: new Date() }],
   });
+
+  // 2️⃣ Fetch all verified and active technicians
+  const verifiedTechnicians = await User.find({
+    role: "technician",
+    adminVerified: "verified",
+    isDeleted: { $ne: true },
+    email: { $exists: true, $ne: "" },
+  });
+
+  // 3️⃣ Send email to each verified technician
+  verifiedTechnicians.forEach(tech => {
+    const subject = "New Service Order Available!";
+    const messageText = `Hello ${tech.name},
+
+A new service order has been created that may match your expertise. 
+Please check your app dashboard to view details and accept the order.
+
+Thank you for being a valued technician.`;
+
+    sendNotificationEmail({
+      sentTo: tech.email,
+      subject,
+      userName: tech.name || "Technician",
+      messageText,
+    }).catch(err => console.error(`Failed to send email to ${tech.email}:`, err.message));
+  });
+
   return order;
 };
 
@@ -131,54 +162,71 @@ const getMyTechnicianDashboard = async (
   return result;
 };
 
-const getMyMonthlyServiceStats = async (serviceProviderId: string, year: number) => {
-  // Ensure valid ObjectId
+
+const getMyMonthlyServiceStats = async (
+  serviceProviderId: string,
+  year: number
+) => {
   const providerObjectId = new mongoose.Types.ObjectId(serviceProviderId);
 
-  // Aggregate service orders for a given provider and year
+  const startDate = new Date(`${year}-01-01T00:00:00.000Z`);
+  const endDate = new Date(`${year}-12-31T23:59:59.999Z`);
+
   const result = await ServiceOrder.aggregate([
+    // Match the provider and valid year
     {
       $match: {
         serviceProviderId: providerObjectId,
         isDeleted: false,
-        createdAt: {
-          $gte: new Date(`${year}-01-01`),
-          $lte: new Date(`${year}-12-31`),
-        },
+        "statusHistory.timestamp": { $gte: startDate, $lte: endDate },
       },
     },
+
+    // Unwind the statusHistory array to handle each status change separately
+    { $unwind: "$statusHistory" },
+
+    // Filter only inprogress and completed statuses within the year
+    {
+      $match: {
+        "statusHistory.status": { $in: ["inprogress", "completed"] },
+        "statusHistory.timestamp": { $gte: startDate, $lte: endDate },
+      },
+    },
+
+    // Group by month and status
     {
       $group: {
         _id: {
-          month: { $month: "$createdAt" },
-          status: "$status",
+          month: { $month: "$statusHistory.timestamp" },
+          status: "$statusHistory.status",
         },
         count: { $sum: 1 },
       },
     },
+
+    // Re-group to merge statuses per month
     {
       $group: {
         _id: "$_id.month",
         statuses: {
-          $push: {
-            status: "$_id.status",
-            count: "$count",
-          },
+          $push: { status: "$_id.status", count: "$count" },
         },
       },
     },
+
+    // Transform structure for output
     {
       $project: {
         _id: 0,
         month: "$_id",
-        pending: {
+        inprogress: {
           $ifNull: [
             {
               $first: {
                 $filter: {
                   input: "$statuses",
                   as: "s",
-                  cond: { $eq: ["$$s.status", "pending"] },
+                  cond: { $eq: ["$$s.status", "inprogress"] },
                 },
               },
             },
@@ -204,21 +252,19 @@ const getMyMonthlyServiceStats = async (serviceProviderId: string, year: number)
     {
       $project: {
         month: 1,
-        pending: "$pending.count",
+        inprogress: "$inprogress.count",
         completed: "$completed.count",
       },
     },
-    {
-      $sort: { month: 1 },
-    },
+    { $sort: { month: 1 } },
   ]);
 
-  // Ensure all months (1-12) are included with 0 counts if missing
+  // Fill missing months
   const monthlyStats = Array.from({ length: 12 }, (_, i) => {
     const monthData = result.find((r) => r.month === i + 1);
     return {
       month: i + 1,
-      pending: monthData?.pending || 0,
+      inprogress: monthData?.inprogress || 0,
       completed: monthData?.completed || 0,
     };
   });
@@ -312,6 +358,30 @@ const acceptServiceOrder = async (
   });
 
   await order.save();
+
+// ✅ Send email notification to client
+const technician = await User.findById(userId);
+if (technician && order.email) {
+  const subject = "Your Service Order Has Been Accepted!";
+  const messageText = `Good news! Your service order has been accepted by ${technician.name}.
+
+You can contact the technician directly using the details below:
+
+Phone: ${technician.phone || "N/A"}
+Email: ${technician.email || "N/A"}
+
+Thank you for using our service.`;
+
+  sendNotificationEmail({
+    sentTo: order.email,
+    subject,
+    userName: order.clientName,
+    messageText,
+  }).catch((err) => {
+    console.error("Failed to send email:", err.message);
+  });
+}
+
   return order;
 };
 
@@ -353,6 +423,22 @@ const completeServiceOrder = async (
   });
 
   await order.save();
+
+  // ✅ Send email to client
+  const technician = await User.findById(userId);
+  if (technician && order.email) {
+    const subject = "Your Service Order is Completed!";
+    const messageText = `Hello ${order.clientName},
+
+  Good news! Your service order has been successfully completed by ${technician.name}. Thank you for using our service.`;
+
+    sendNotificationEmail({
+      sentTo: order.email,
+      subject,
+      userName: order.clientName,
+      messageText,
+    }).catch(err => console.error("Failed to send email:", err.message));
+  }
 
   return order;
 };

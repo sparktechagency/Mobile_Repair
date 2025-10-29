@@ -56,7 +56,15 @@ userRoutes
   )
 
 
+  .get(
+    "/total-statistics",
+    userController.getTotalStatistics
+  )
 
+  .get(
+    '/monthly-statistics',
+    userController.getMonthlyStatistics
+  )
  
 
   .patch(

@@ -3,6 +3,18 @@ import sendResponse from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import { settingsService } from "./settting.service";
 
+
+const getSettings = async (req: Request, res: Response) => {
+        const policy = await settingsService.getSettings();
+
+        sendResponse(res, {
+            statusCode: httpStatus.OK,
+            success: true,
+            message: "Settings retrieved successfully",
+            data: policy || null,
+        });
+};
+
 // Get the privacy policy
 const getPrivacyPolicy = async (req: Request, res: Response) => {
         const policy = await settingsService.getSettingsByKey({key: "privacyPolicy"});
@@ -41,7 +53,7 @@ const getAboutUs = async (req: Request, res: Response) => {
 
 const getDynamicDocuments = async (req: Request, res: Response) => {
   const { key } = req.params as { 
-    key: "privacyPolicy" | "aboutUs" | "termsService" | "gdpr" | "howOrderingWorks" | "howItWorks" | "frameworkAgreement" 
+    key:| "mrpRepairWaiver" | "repairLiability" | "warrentyCoverage" | "customerResponsibilities" | "pricing" | "importantNotice" | "privacyPolicy" | "aboutUs" | "termsService";
   };
 
   const document = await settingsService.getSettingsByKey({ key });
@@ -81,6 +93,7 @@ export const settingsController = {
     getPrivacyPolicy,
     getTermConditions,
     getAboutUs,
+    getSettings,
     getDynamicDocuments,
     updateSettingsByKey
 };

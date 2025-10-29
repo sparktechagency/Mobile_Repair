@@ -1,18 +1,24 @@
- import { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import sendResponse from '../../utils/sendResponse';
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import { notificationService } from './notifications.service';
 
 const createNotification = catchAsync(async (req: Request, res: Response) => {
-  const {userId} = req.user;
-  const {message, type } = req.body;
-  const result = await notificationService.createNotification({ userId,  message, type });
+  const senderId = req.user.userId;
+  const { receiverId, message, type } = req.body;
+
+  const result = await notificationService.createNotification({
+    userId: senderId,
+    receiverId,
+    message,
+    type,
+  });
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
-    message: 'Notification created successfully',
+    message: 'Notification created successfully!',
     data: result,
   });
 });
@@ -23,20 +29,20 @@ const getAllNotifications = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    data: result,
     message: 'All notifications fetched successfully!',
+    data: result,
   });
 });
 
 const getMyNotifications = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user.userId;
-  const result = await notificationService.getMyNotifications(userId);
+  const receiverId = req.user.userId;
+  const result = await notificationService.getMyNotifications(receiverId);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    data: result,
     message: 'My notifications fetched successfully!',
+    data: result,
   });
 });
 
@@ -47,19 +53,19 @@ const markAsRead = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: 'Notification marked as read successfully!',
+    message: 'Notification marked as read!',
     data: result,
   });
 });
 
 const markAllAsRead = catchAsync(async (req: Request, res: Response) => {
-  const {userId} = req.user;
-  const result = await notificationService.markAllAsRead(userId);
+  const receiverId = req.user.userId;
+  const result = await notificationService.markAllAsRead(receiverId);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: 'Notification marked as read successfully!',
+    message: 'All notifications marked as read!',
     data: result,
   });
 });

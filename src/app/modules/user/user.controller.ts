@@ -168,6 +168,45 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
+const getTotalStatistics = catchAsync(
+  async (req: Request, res: Response) => {
+    let { year } = req.query;
+
+    // ✅ If year not passed or invalid → use current year
+    const currentYear = new Date().getFullYear();
+    const targetYear = year ? Number(year) : currentYear;
+
+    const result = await userService.getTotalStatistics(targetYear);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Statistics fetched successfully",
+      data: result,
+    });
+  }
+);
+
+const getMonthlyStatistics = catchAsync(
+  async (req: Request, res: Response) => {
+    let { year } = req.query;
+
+    // ✅ If year not passed or invalid → use current year
+    const currentYear = new Date().getFullYear();
+    const targetYear = year ? Number(year) : currentYear;
+
+    const result = await userService.getMonthlyStatistics(targetYear);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Monthly statistics fetched successfully",
+      data: result,
+    });
+  }
+);
+
 const blockedUser = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.blockedUser(req.params.id);
   sendResponse(res, {
@@ -201,4 +240,6 @@ export const userController = {
   getPendingTechnicians,
   verifyTechnicianUserById,
   declineTechnicianUserById,
+  getTotalStatistics,
+  getMonthlyStatistics
 };

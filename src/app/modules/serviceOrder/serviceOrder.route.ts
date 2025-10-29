@@ -46,6 +46,7 @@ router.post(
         auth(USER_ROLE.TECHNICIAN),
         ServiceOrderController.getMyTechnicianDashboard
     )
+    
     .get(
         "/technician/monthly/stats",
         auth(USER_ROLE.TECHNICIAN),
