@@ -24,11 +24,17 @@ userRoutes
     userController.userCreateVarification,
   )
 
+  .post(
+    "/create-superadmin",
+    auth(USER_ROLE.ADMIN),
+    userController.createSuperAdmin
+  )
+
 
   .get(
     '/my-profile',
     auth(
-      USER_ROLE.TECHNICIAN,USER_ROLE.SUPERADMIN, USER_ROLE.ADMIN
+      USER_ROLE.TECHNICIAN,USER_ROLE.SUPERADMIN, USER_ROLE.ADMIN,
     ),
     userController.getMyProfile,
   )
@@ -43,6 +49,11 @@ userRoutes
 
   .get('/all-users', auth("admin"), userController.getAllUsers)
 
+  .get(
+    "/super_admins",
+    auth(USER_ROLE.ADMIN),
+    userController.getAllSuperAdmins
+  )
 
   .get(
     '/technicians',
@@ -76,6 +87,12 @@ userRoutes
   )
 
   .patch(
+    '/update-super-admin-profile/:superAdminId',
+    auth(USER_ROLE.ADMIN),
+    userController.updateSuperAdminByAdmin
+  )
+
+  .patch(
     '/verified/:userId',
     auth(USER_ROLE.ADMIN),
     userController.verifyTechnicianUserById,
@@ -98,6 +115,12 @@ userRoutes
     auth('user'
     ),
     userController.deleteMyAccount,
+  )
+
+  .delete(
+    '/delete-user/:id',
+    auth(USER_ROLE.ADMIN, USER_ROLE.SUPERADMIN),
+    userController.deletedUserById
   );
 
 // export default userRoutes;

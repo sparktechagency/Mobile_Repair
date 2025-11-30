@@ -11,40 +11,90 @@ import { sendNotificationEmail } from "../../utils/emailNotification";
 
 
 
+// const createServiceOrder = async (payload: IServiceOrder) => {
+//   // 1️⃣ Create the service order
+//   const order = await ServiceOrder.create({
+//     ...payload,
+//     statusHistory: [{ status: "pending", timestamp: new Date() }],
+//   });
+
+//   // 2️⃣ Fetch all verified and active technicians
+//   const verifiedTechnicians = await User.find({
+//     role: "technician",
+//     adminVerified: "verified",
+//     isDeleted: { $ne: true },
+//     email: { $exists: true, $ne: "" },
+//   });
+
+//   // 3️⃣ Send email to each verified technician
+//   verifiedTechnicians.forEach(tech => {
+//     const subject = "New Service Order Available!";
+//     const messageText = `Hello ${tech.name},
+
+// A new service order has been created that may match your expertise. 
+// Please check your app dashboard to view details and accept the order.
+
+// Thank you for being a valued technician.`;
+
+//     sendNotificationEmail({
+//       sentTo: tech.email,
+//       subject,
+//       userName: tech.name || "Technician",
+//       messageText,
+//     }).catch(err => console.error(`Failed to send email to ${tech.email}:`, err.message));
+//   });
+
+//   return order;
+// };
+
+
 const createServiceOrder = async (payload: IServiceOrder) => {
-  // 1️⃣ Create the service order
-  const order = await ServiceOrder.create({
-    ...payload,
-    statusHistory: [{ status: "pending", timestamp: new Date() }],
-  });
 
-  // 2️⃣ Fetch all verified and active technicians
-  const verifiedTechnicians = await User.find({
-    role: "technician",
-    adminVerified: "verified",
-    isDeleted: { $ne: true },
-    email: { $exists: true, $ne: "" },
-  });
+  try {
+    // 1️⃣ Create the service order
+    const order = await ServiceOrder.create({
+      ...payload,
+      statusHistory: [{ status: "pending", timestamp: new Date() }],
+    });
 
-  // 3️⃣ Send email to each verified technician
-  verifiedTechnicians.forEach(tech => {
-    const subject = "New Service Order Available!";
-    const messageText = `Hello ${tech.name},
+    // 2️⃣ Fetch all verified and active technicians
+    const verifiedTechnicians = await User.find({
+      role: "technician",
+      adminVerified: "verified",
+      isDeleted: { $ne: true },
+      email: { $exists: true, $ne: "" },
+    });
+
+    // 3️⃣ Send email to each verified technician
+    for (const tech of verifiedTechnicians) {
+      try {
+        const subject = "New Service Order Available!";
+        const messageText = `Hello ${tech.name},
 
 A new service order has been created that may match your expertise. 
 Please check your app dashboard to view details and accept the order.
 
 Thank you for being a valued technician.`;
 
-    sendNotificationEmail({
-      sentTo: tech.email,
-      subject,
-      userName: tech.name || "Technician",
-      messageText,
-    }).catch(err => console.error(`Failed to send email to ${tech.email}:`, err.message));
-  });
+        await sendNotificationEmail({
+          sentTo: tech.email,
+          subject,
+          userName: tech.name || "Technician",
+          messageText,
+        });
+      } catch (emailErr: any) {
+        console.error(
+          `❌ Failed to send email to ${tech.email}:`,
+          emailErr.message
+        );
+      }
+    }
 
-  return order;
+    return order;
+  } catch (err: any) {
+    console.error("❌ Failed to create service order:", err.message);
+    throw new AppError(500, "Failed to create service order");
+  }
 };
 
 const getAllServiceOrders = async (
@@ -53,7 +103,10 @@ const getAllServiceOrders = async (
   // Base filter: exclude deleted orders
   const baseFilter = { isDeleted: false };
 
-  const userQuery = new QueryBuilder(ServiceOrder.find(baseFilter), query)
+  const userQuery = new QueryBuilder(ServiceOrder.find(baseFilter).populate({
+        path: "serviceProviderId",
+        select: "name email phone", // <-- Get Technician info
+      }), query)
     .search(["clientName", "email", "phoneNumber"])
     .filter()   // handles brand, issueType, status, preferedDate
     .sort()
@@ -276,13 +329,17 @@ const getMyTechnicianServiceOrders = async (
   userId: string,
   query:  {}
 ) => {
+
   if (!userId) throw new Error("userId is required");
 
+  const providerId = new mongoose.Types.ObjectId(userId);
   // Base filter: only orders assigned to this technician
   const baseFilter = {
     isDeleted: false,
-    serviceProviderId: userId,
+    serviceProviderId: providerId,
   };
+
+
 
   const qb = new QueryBuilder(ServiceOrder.find(baseFilter), query)
     .search(["clientName", "email", "phoneNumber"])

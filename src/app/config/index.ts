@@ -30,6 +30,7 @@ export default {
   admin_email: process.env.ADMIN_EMAIL,
   admin_password: process.env.ADMIN_PASSWORD,
   admin_phone: process.env.ADMIN_PHONE,
+  default_superadmin_pass: process.env.DEFAULT_SUPERADMIN_PASS,
   nodemailer_host_email: process.env.NODEMAILER_HOST_EMAIL,
   nodemailer_host_pass: process.env.NODEMAILER_HOST_PASS,
   otp_expire_time: process.env.OTP_EXPIRE_TIME,

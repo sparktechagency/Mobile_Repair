@@ -19,7 +19,7 @@ const createServiceOrderValidation = z.object({
       .min(3, "Client name must be at least 3 characters"),
     phoneNumber: z
       .string({ required_error: "Phone number is required" })
-      .min(10, "Phone number must be at least 10 digits"),
+      .min(6, "Phone number must be at least 10 digits"),
     email: z
       .string({ required_error: "Email is required" })
       .email("Invalid email format"),

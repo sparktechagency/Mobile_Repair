@@ -35,6 +35,26 @@ const userCreateVarification = catchAsync(async (req, res) => {
   });
 });
 
+const createSuperAdmin = catchAsync(
+  async (req: Request, res: Response) => {
+    const { name, email, phone } = req.body;
+
+    const result = await userService.createSuperAdminByAdmin({
+      name,
+      email,
+      phone,
+    });
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Super Admin created successfully",
+      data: result,
+    });
+  }
+);
+
+
 const verifyTechnicianUserById = catchAsync(
   async (req: Request, res: Response) => {
     // Extract userId from params and status from request body
@@ -105,6 +125,30 @@ const getAdminProfile = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+const getAllSuperAdmins = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.getAllSuperAdmins(req.query);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Super Admins fetched successfully',
+    data: result,
+  });
+});
+
+const updateSuperAdminByAdmin = catchAsync (async (req: Request, res: Response) => {
+    
+  const {superAdminId} = req.params;
+
+  const result = await userService.updateSuperAdminByAdmin(superAdminId, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Super Admin updated successfully',
+    data: result,
+  })
+})
 
 
 
@@ -227,9 +271,21 @@ const deleteMyAccount = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const deletedUserById = catchAsync(async (req: Request, res: Response) => {
+  
+  const result = await userService.deletedUserById(req.params.id);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'User deleted successfully',
+    data: result,
+  });
+})
+
 export const userController = {
   createUser,
   userCreateVarification,
+  createSuperAdmin,
   getMyProfile,
   getAdminProfile,
   updateMyProfile,
@@ -241,5 +297,8 @@ export const userController = {
   verifyTechnicianUserById,
   declineTechnicianUserById,
   getTotalStatistics,
-  getMonthlyStatistics
+  getMonthlyStatistics,
+  getAllSuperAdmins,
+  updateSuperAdminByAdmin,
+  deletedUserById
 };

@@ -6,6 +6,8 @@ import { settingsRoutes } from "../modules/setting/setting.route";
 import { notificationRoutes } from "../modules/notifications/notifications.route";
 import { ServiceOrderRoutes } from "../modules/serviceOrder/serviceOrder.route";
 import { managePriceRoutes } from "../modules/managePrice/managePrice.route";
+import path from "path";
+import { manageLocationRoutes } from "../modules/manageLocation/manageLocation.route";
 
 const router = Router();
 
@@ -38,6 +40,11 @@ const moduleRoutes = [
      path: "/serviceOrder",
      route: ServiceOrderRoutes
   },
+
+  {
+    path: "/manage_location",
+    route: manageLocationRoutes
+  }
 
 ];
 

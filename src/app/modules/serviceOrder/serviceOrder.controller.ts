@@ -13,7 +13,7 @@ const create = catchAsync(async (req, res) => {
   });
 });
 
-const getAll = catchAsync(async (req, res) => {
+const getAllServiceOrders = catchAsync(async (req, res) => {
   const result = await ServiceOrderService.getAllServiceOrders();
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -159,7 +159,7 @@ const softDelete = catchAsync(async (req, res) => {
 
 export const ServiceOrderController = {
   create,
-  getAll,
+  getAllServiceOrders,
   getPendingServiceOrders,
   getMyTechnicianServiceOrders,
   getMyTechnicianServiceOrdersCounts,

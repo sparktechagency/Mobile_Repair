@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
 import AppError from '../../error/AppError';
-import { DeleteAccountPayload, PaginateQuery, TUser, TUserCreate, VerifiedProfessionalPayload } from './user.interface';
+import { CreateSuperAdminProps, DeleteAccountPayload, PaginateQuery, TUser, TUserCreate, VerifiedProfessionalPayload } from './user.interface';
 import { User } from './user.model';
 import config from '../../config';
 import QueryBuilder from '../../builder/QueryBuilder';
@@ -19,6 +19,7 @@ import fs from 'fs';
 import path from 'path';
 import { otpSendEmail, sendNotificationEmail } from '../../utils/emailNotification';
 import { ServiceOrder } from '../serviceOrder/serviceOrder.model';
+import { create } from 'domain';
 
 export type IFilter = {
   searchTerm?: string;
@@ -253,6 +254,70 @@ const otpVerifyAndCreateUser = async ({
             }
 };
 
+const createSuperAdminByAdmin = async ({
+  name,
+  email,
+  phone,
+}: CreateSuperAdminProps) => {
+  // ===== Validate Inputs =====
+  if (!name || !email || !phone) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Name, email & phone are required"
+    );
+  }
+
+  // ===== Check if user already exists =====
+  const isExist = await User.isUserExist(email);
+  if (isExist) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "User already exists with this email"
+    );
+  }
+
+  // ===== Default password from .env =====
+  const defaultPassword = config.default_superadmin_pass;
+  if (!defaultPassword) {
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Default password not configured in environment"
+    );
+  }
+
+  // ===== Create Super Admin with transaction =====
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const newUser = await User.create(
+      [
+        {
+          name,
+          email,
+          phone,
+          password: defaultPassword,
+          role: USER_ROLE.SUPERADMIN,
+          adminVerified: "verified", 
+          address: "",
+          yearOfExperience: 0,
+          specialties: "",
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return  newUser[0];
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw new AppError(httpStatus.BAD_REQUEST, "Super Admin creation failed");
+  }
+};
+
 
 const updateUser = async (userId: string, payload: Partial<TUser>) => {
   // 🚫 Restrict sensitive fields from updates here
@@ -378,12 +443,41 @@ const declineTechnicianUserById = async (userId: string, reason?: string) => {
   return user;
 };
 
+const updateSuperAdminByAdmin = async (
+  superAdminId: string,
+  updateData: Partial<{ name: string; phone: string }>
+) => {
+  if (!superAdminId) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Super Admin ID is required");
+  }
+
+  // Check if Super Admin exists
+  const superAdmin = await User.findOne({ _id: superAdminId, role: USER_ROLE.SUPERADMIN });
+  if (!superAdmin) {
+    throw new AppError(httpStatus.NOT_FOUND, "Super Admin not found");
+  }
+
+  // Only update name and phone
+  if (updateData.name) superAdmin.name = updateData.name;
+  if (updateData.phone) superAdmin.phone = updateData.phone;
+
+  await superAdmin.save();
+
+  return superAdmin;
+};
+
+const getAllSuperAdmins = async (query: Record<string, unknown>) => {
 
 
+  const superAdmins = await User.find({ role: USER_ROLE.SUPERADMIN, isDeleted: false }).select("name email phone createdAt").sort({createdAt: -1});
+
+  return superAdmins;
+};
 
 
 const getAllUserQuery = async (userId: string, query: Record<string, unknown>) => {
-  const userQuery = new QueryBuilder(User.find({ _id: { $ne: userId } }), query)
+
+  const userQuery = new QueryBuilder(User.find({ _id: { $ne: userId },isDeleted: false }), query)
     .search(['fullName'])
     .filter()
     .sort()
@@ -403,7 +497,7 @@ const getAllTechnicians =  async (
     role: USER_ROLE.TECHNICIAN,
     adminVerified: "verified",
     isDeleted: false,
-    isBlocked: false,
+    // isBlocked: false,
   };
 
   const userQuery = new QueryBuilder(User.find(roleFilter), query)
@@ -531,7 +625,7 @@ const getMonthlyStatistics = async (year: number) => {
 
 // Optimized the function to improve performance, reducing the processing time to 235 milliseconds.
 const getMyProfile = async (id: string) => {
-const result = await User.findById(id).populate("profileId")
+const result = await User.findById(id)
 return result;
 };
 
@@ -612,9 +706,31 @@ const blockedUser = async (id: string) => {
   return {status, user};
 };
 
+const deletedUserById = async (id: string) => {
+  const singleUser = await User.IsUserExistById(id);
+
+  if (!singleUser) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const user = await User.findByIdAndUpdate(
+    id,
+    { isDeleted: true },
+    { new: true },
+  );
+
+  if (!user) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'user deleting failed');
+  }
+
+  return user;
+};
+  
+
 export const userService = {
   createUserToken,
   otpVerifyAndCreateUser,
+  createSuperAdminByAdmin,
   getAllTechnicians,
   verifyTechnicianUserById,
   getPendingTechnicians,
@@ -630,4 +746,7 @@ export const userService = {
   blockedUser,
   getAllUserQuery,
   getAllUserCount,
+  updateSuperAdminByAdmin,
+  getAllSuperAdmins,
+  deletedUserById
 };

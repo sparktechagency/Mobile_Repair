@@ -31,8 +31,8 @@ router.post(
 
 
     .get(
-        "/", 
-        ServiceOrderController.getAll
+        "/all", 
+        ServiceOrderController.getAllServiceOrders
     )
 
     .get(

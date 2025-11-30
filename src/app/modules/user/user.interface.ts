@@ -57,3 +57,9 @@ export interface VerifiedProfessionalPayload {
   userId: string;
   status: 'pending' | 'verified';
 }
+
+export interface CreateSuperAdminProps {
+  name: string;
+  email: string;
+  phone: string;
+}
