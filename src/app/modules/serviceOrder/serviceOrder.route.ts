@@ -27,6 +27,11 @@ router.post(
         auth(USER_ROLE.TECHNICIAN),
         ServiceOrderController.completeServiceOrder
     )
+    .patch(
+        "/en-route/:orderId",
+        auth(USER_ROLE.TECHNICIAN),
+        ServiceOrderController.enRouteServiceOrder
+    )
 
 
 

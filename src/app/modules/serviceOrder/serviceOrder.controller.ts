@@ -144,6 +144,21 @@ const completeServiceOrder = catchAsync(async (req, res) => {
   }
 );
 
+const enRouteServiceOrder = catchAsync(async (req, res) => {
+    const { orderId } = req.params;
+    const userId = req.user.userId; // extracted from auth middleware
+
+    const result = await  ServiceOrderService.enRouteServiceOrder(orderId, userId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "En Route Mail Sent Successfully",
+      data: result,
+    });
+  }
+);
+
 
 
 
@@ -167,6 +182,7 @@ export const ServiceOrderController = {
   getMyMonthlyServiceStats,
   getById,
   completeServiceOrder,
+  enRouteServiceOrder,
   acceptServiceOrder,
   softDelete,
 };

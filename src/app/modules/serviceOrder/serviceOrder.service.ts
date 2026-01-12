@@ -500,6 +500,66 @@ const completeServiceOrder = async (
   return order;
 };
 
+const enRouteServiceOrder = async (
+  orderId: string,
+  userId: string // technician going en route
+) => {
+  const order = await ServiceOrder.findById(orderId);
+
+  if (!order || order.isDeleted) {
+    throw new AppError(httpStatus.NOT_FOUND, "Service Order not found");
+  }
+
+  // // Only pending orders can be marked as inprogress
+  // if (order.status !== "pending") {
+  //   throw new AppError(
+  //     httpStatus.BAD_REQUEST,
+  //     "Only pending orders can be marked as en route"
+  //   );
+  // }
+
+  // // Assign technician
+  // order.status = "inprogress";
+  // order.serviceProviderId = userId;
+
+  // // Add status history
+  // order.statusHistory.push({
+  //   status: "inprogress",
+  //   timestamp: new Date(),
+  // });
+
+  // await order.save();
+
+  // ✅ Send email to client
+  const technician = await User.findById(userId);
+
+  if (technician && order.email) {
+    const subject = "Your Service Technician Is On the Way 🚗";
+    const messageText = `Hello ${order.clientName},
+
+Good news! Your service technician ${technician.name} is on the way to your location.
+
+Service Details:
+• Brand: ${order.brand}
+• Model: ${order.model}
+• Preferred Time: ${order.preferedTime}
+
+Please ensure someone is available at the service address.
+
+Thank you for choosing our service.`;
+
+    sendNotificationEmail({
+      sentTo: order.email,
+      subject,
+      userName: order.clientName,
+      messageText,
+    }).catch(err =>
+      console.error("Failed to send en route email:", err.message)
+    );
+  }
+
+  return order;
+};
 
 
 const deleteServiceOrder = async (id: string) => {
@@ -524,6 +584,7 @@ export const ServiceOrderService = {
   getMyTechnicianServiceOrdersCounts,
   getPendingServiceOrders,
   completeServiceOrder,
+  enRouteServiceOrder,
   acceptServiceOrder,
   deleteServiceOrder,
 };
