@@ -22,13 +22,45 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(express.json());
 app.use(cookieParser());
+// app.use(
+//   cors({
+//     origin: true,
+//     credentials: true,
+//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   }),
+// );
+
+
+const allowedOrigins = [
+  'https://dashboard.mobilephonerepair.org',
+  'https://mobilephonerepair.org',
+  'https://technician.mobilephonerepair.org',
+];
+
+// Environment check
+const isProduction = process.env.NODE_ENV === "production";
+
 app.use(
   cors({
-    origin: true,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // Postman, mobile app ইত্যাদির জন্য
+      if (isProduction) {
+        // প্রোডাকশন মোডে শুধু allowedOrigins থেকে অনুমোদন
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      } else {
+        // ডেভেলপমেন্টে সব ডোমেইন থেকে access
+        callback(null, true);
+      }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  }),
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  })
 );
+
 
 app.use(logHttpRequests);
 
