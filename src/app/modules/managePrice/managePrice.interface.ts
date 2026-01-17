@@ -1,6 +1,7 @@
 export interface IManagePrice {
   icon: string;
   title: string;
-  price: number;
+  minPrice: number;
+  maxPrice: number;
   isDeleted?: boolean;
 }

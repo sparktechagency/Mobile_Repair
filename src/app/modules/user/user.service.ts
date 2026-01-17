@@ -258,9 +258,10 @@ const createSuperAdminByAdmin = async ({
   name,
   email,
   phone,
+  password
 }: CreateSuperAdminProps) => {
   // ===== Validate Inputs =====
-  if (!name || !email || !phone) {
+  if (!name || !email || !phone || !password) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       "Name, email & phone are required"
@@ -276,14 +277,14 @@ const createSuperAdminByAdmin = async ({
     );
   }
 
-  // ===== Default password from .env =====
-  const defaultPassword = config.default_superadmin_pass;
-  if (!defaultPassword) {
-    throw new AppError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      "Default password not configured in environment"
-    );
-  }
+  // // ===== Default password from .env =====
+  // const defaultPassword = config.default_superadmin_pass;
+  // if (!defaultPassword) {
+  //   throw new AppError(
+  //     httpStatus.INTERNAL_SERVER_ERROR,
+  //     "Default password not configured in environment"
+  //   );
+  // }
 
   // ===== Create Super Admin with transaction =====
   const session = await mongoose.startSession();
@@ -296,7 +297,7 @@ const createSuperAdminByAdmin = async ({
           name,
           email,
           phone,
-          password: defaultPassword,
+          password,
           role: USER_ROLE.SUPERADMIN,
           adminVerified: "verified", 
           address: "",

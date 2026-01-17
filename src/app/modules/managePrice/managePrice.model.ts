@@ -5,7 +5,8 @@ const managePriceSchema = new Schema<IManagePrice>(
   {
     icon: { type: String, required: true },
     title: { type: String, required: true },
-    price: { type: Number, required: true },
+    minPrice: { type: Number, required: true },
+    maxPrice: { type: Number, required: true },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

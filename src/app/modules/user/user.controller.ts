@@ -37,12 +37,13 @@ const userCreateVarification = catchAsync(async (req, res) => {
 
 const createSuperAdmin = catchAsync(
   async (req: Request, res: Response) => {
-    const { name, email, phone } = req.body;
+    const { name, email, phone,password } = req.body;
 
     const result = await userService.createSuperAdminByAdmin({
       name,
       email,
       phone,
+      password
     });
 
     sendResponse(res, {
