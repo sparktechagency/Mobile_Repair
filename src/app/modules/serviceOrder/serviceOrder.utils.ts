@@ -1,3 +1,7 @@
+import { sendNotificationEmail } from "../../utils/emailNotification";
+import { TUserCreate } from "../user/user.interface";
+import { User } from "../user/user.model";
+
 // ✅ Date helpers
 export const startOfToday = () => {
   const d = new Date();
@@ -54,3 +58,47 @@ export const computeTrend = (current: number, previous: number, period: string) 
   return { direction, percent: Math.abs(percent), text };
 };
 
+
+
+
+export const sendNewOrderEmailToTechnicians = async (
+  technicians: TUserCreate[]
+) => {
+  for (const tech of technicians) {
+    if (!tech.email) continue;
+
+    try {
+      await sendNotificationEmail({
+        sentTo: tech.email,
+        subject: "New Service Order Available!",
+        userName: tech.name || "Technician",
+        messageText: `Hello ${tech.name || "Technician"},
+
+A new service order has been created that may match your expertise.
+Please check your app dashboard to view details and accept the order.
+
+Thank you for being a valued technician.`,
+      });
+    } catch (error: any) {
+      console.error(
+        `❌ Email failed for ${tech.email}:`,
+        error.message
+      );
+    }
+  }
+};
+
+
+export const notifyTechniciansForNewOrder = async () => {
+  const verifiedTechnicians = await User.find({
+    role: "technician",
+    adminVerified: "verified",
+    isDeleted: { $ne: true },
+    email: { $exists: true, $ne: "" },
+  });
+
+  // 🚀 Fire-and-forget background execution
+  setImmediate(() => {
+    sendNewOrderEmailToTechnicians(verifiedTechnicians);
+  });
+};

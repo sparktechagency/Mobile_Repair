@@ -4,7 +4,7 @@ import { IServiceOrder, IServiceOrderStatus } from "./serviceOrder.interface";
 import AppError from "../../error/AppError";
 import mongoose, { Types } from "mongoose";
 import QueryBuilder from "../../builder/QueryBuilder";
-import { computeTrend, shiftDays, shiftMonths, shiftWeeks, startOfMonth, startOfToday, startOfWeek } from "./serviceOrder.utils";
+import { computeTrend, notifyTechniciansForNewOrder, shiftDays, shiftMonths, shiftWeeks, startOfMonth, startOfToday, startOfWeek } from "./serviceOrder.utils";
 import { User } from "../user/user.model";
 import { sendNotificationEmail } from "../../utils/emailNotification";
 
@@ -57,39 +57,10 @@ const createServiceOrder = async (payload: IServiceOrder) => {
       statusHistory: [{ status: "pending", timestamp: new Date() }],
     });
 
-    // 2️⃣ Fetch all verified and active technicians
-    const verifiedTechnicians = await User.find({
-      role: "technician",
-      adminVerified: "verified",
-      isDeleted: { $ne: true },
-      email: { $exists: true, $ne: "" },
-    });
 
-    // 3️⃣ Send email to each verified technician
-    for (const tech of verifiedTechnicians) {
-      try {
-        const subject = "New Service Order Available!";
-        const messageText = `Hello ${tech.name},
-
-A new service order has been created that may match your expertise. 
-Please check your app dashboard to view details and accept the order.
-
-Thank you for being a valued technician.`;
-
-        await sendNotificationEmail({
-          sentTo: tech.email,
-          subject,
-          userName: tech.name || "Technician",
-          messageText,
-        });
-      } catch (emailErr: any) {
-        console.error(
-          `❌ Failed to send email to ${tech.email}:`,
-          emailErr.message
-        );
-      }
-    }
-
+    // Notify technicians (NON-BLOCKING)
+    notifyTechniciansForNewOrder();
+    
     return order;
   } catch (err: any) {
     console.error("❌ Failed to create service order:", err.message);
@@ -388,7 +359,8 @@ const getServiceOrderById = async (id: string) => {
 
 const acceptServiceOrder = async (
   orderId: string,
-  userId: string
+  userId: string,
+  payload: any
 ) => {
   const order = await ServiceOrder.findById(orderId);
 
@@ -404,6 +376,13 @@ const acceptServiceOrder = async (
     );
   }
 
+
+  if(payload.preferedDate && payload.preferedDate !== order.preferedDate) {
+    order.preferedDate = payload.preferedDate
+  }
+  if(payload.preferedTime && payload.preferedTime !== order.preferedTime) {
+    order.preferedTime = payload.preferedTime
+  }
   // ✅ Assign technician and update status
   order.status = "inprogress";
   order.serviceProviderId = new Types.ObjectId(userId);
@@ -414,10 +393,14 @@ const acceptServiceOrder = async (
     timestamp: new Date(),
   });
 
-  await order.save();
+  const result = await order.save();
+
+  console.log("result =>>>> ", result)
 
 // ✅ Send email notification to client
 const technician = await User.findById(userId);
+
+
 if (technician && order.email) {
   const subject = "Your Service Order Has Been Accepted!";
   const messageText = `Good news! Your service order has been accepted by ${technician.name}.

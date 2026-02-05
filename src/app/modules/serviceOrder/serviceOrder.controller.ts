@@ -116,7 +116,9 @@ const acceptServiceOrder = catchAsync(async (req, res) => {
   const { orderId } = req.params;
   const userId = req.user.userId;
 
-  const result = await ServiceOrderService.acceptServiceOrder(orderId, userId);
+
+
+  const result = await ServiceOrderService.acceptServiceOrder(orderId, userId, req.body);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
