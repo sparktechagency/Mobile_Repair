@@ -63,7 +63,7 @@ const createUserToken = async (payload: TUserCreate) => {
     await otpServices.updateOtpByEmail(email,otpPurpose, otpUpdateData);
   } else if (!isExist) {
     await otpServices.createOtp({
-      name: "Customer",
+      name: payload.name || "Customer",
       sentTo: email,
       receiverType: 'email',
       purpose: otpPurpose,
@@ -90,7 +90,7 @@ const createUserToken = async (payload: TUserCreate) => {
     await otpSendEmail({
       sentTo: email,
       subject: 'Your one time otp for email  verification',
-      name: "Customer",
+      name: payload.name || "Customer",
       otp,
       expiredAt: expiredAt,
     });
