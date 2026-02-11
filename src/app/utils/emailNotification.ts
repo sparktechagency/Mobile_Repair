@@ -17,7 +17,6 @@ interface OtpSendEmailParams {
 }
 
 
-console.log(config);
 
 const logoUrl = config.logo_url || 'https://res.cloudinary.com/dns84qf2p/image/upload/v1770783068/mobile_repair_pf3soi.png';
 const primaryColor = config.primary_color || '#C70039';
@@ -50,6 +49,7 @@ const otpSendEmail = async ({
     <div style="padding: 24px; color: #333333;">
       <p>Hello <strong>${name}</strong>,</p>
 
+      <br/>
       <p>
         Use the following One-Time Password (OTP) to complete your verification.
         This code is valid for a limited time.

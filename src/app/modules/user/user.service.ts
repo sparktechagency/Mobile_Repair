@@ -34,7 +34,7 @@ export interface OTPVerifyAndCreateUserProps {
 
 const createUserToken = async (payload: TUserCreate) => {
   
-  console.log("before create user => >> ",{payload});
+
   
   const { name, email, password,  phone, yearOfExperience, specialties, address} = payload;
   let adminVerified = "pending"

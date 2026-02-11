@@ -40,7 +40,7 @@ const allowedOrigins = [
 // Environment check
 const isProduction = process.env.NODE_ENV === "production";
 
-console.log("isProduction ===>>>> ", isProduction);
+
 
 app.use(
   cors({

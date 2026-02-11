@@ -108,7 +108,7 @@ const forgotPasswordByEmail = async (email: string) => {
     await otpSendEmail({
       sentTo: email,
       subject: 'Your one time otp for forget password',
-      name: '',
+      name: user.name || '',
       otp,
       expiredAt: expiredAt,
     });
