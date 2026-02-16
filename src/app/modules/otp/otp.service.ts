@@ -74,7 +74,7 @@ const otpMatch = async (email: string, purpose: string, otp: string) => {
 };
 
 export const deleteOtpsByEmail = async (email: string) => {
-  return Otp.deleteMany({ email });
+  return Otp.deleteMany({ sentTo:email });
 };
 
 const updateOtpByEmail = async (

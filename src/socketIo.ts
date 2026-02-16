@@ -190,7 +190,7 @@ export const emitNotification = async ({
 }: {
   userId: mongoose.Types.ObjectId;
   receiverId: mongoose.Types.ObjectId;
-  userMsg?: {image: string, text: string, photos?: string[]};
+  userMsg?: {fullName: string,image: string, text: string, photos?: string[]};
   type?: string;
 }): Promise<void> => {
 

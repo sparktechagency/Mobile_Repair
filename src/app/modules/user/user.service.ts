@@ -160,7 +160,7 @@ const otpVerifyAndCreateUser = async ({
               console.error("Failed to delete OTPs:", err);
             });
 
-            
+
             // Check if user exists
             const isExist = await User.isUserExist(email as string);
 
@@ -201,7 +201,7 @@ const otpVerifyAndCreateUser = async ({
               const notificationData = {   
                     userId: new Types.ObjectId(user[0]._id),    // Sender = Technician user
                     receiverId: new Types.ObjectId(getAdminId()), // Receiver = Admin
-                    message: {
+                    userMsg: {
                       fullName: user[0].name || "",
                       image: user[0].profileImage || "",
                       text: "A new technical user has registered and is pending approval.",
@@ -257,6 +257,8 @@ const otpVerifyAndCreateUser = async ({
             } catch (error) {
               await session.abortTransaction();
               session.endSession();
+
+              console.log("error =>>>> ", error);
               throw new AppError(httpStatus.BAD_REQUEST, "User creation failed");
             }
 };
