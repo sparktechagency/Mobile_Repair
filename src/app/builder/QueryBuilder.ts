@@ -51,12 +51,10 @@ class QueryBuilder<T> {
     // Handle category name filter
     if (this.query.categoryName) {
 
-      console.log('Applying categoryName filter:', this.query.categoryName);
       this.modelQuery = this.modelQuery.find({
         'categoryId.title': { $regex: this.query.categoryName, $options: 'i' },
       });
 
-      console.log('Category Name Filter Applied', this.modelQuery);
       delete queryObj.categoryName;
     }
 

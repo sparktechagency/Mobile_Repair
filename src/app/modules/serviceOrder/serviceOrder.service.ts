@@ -94,14 +94,13 @@ const getMyTechnicianServiceOrdersCounts = async (userId: string) => {
   if (!userId) throw new Error("userId is required");
 
   const objectId = new mongoose.Types.ObjectId(userId);
-  console.log("user id =>>>> ", userId)
+
   const counts = await ServiceOrder.aggregate([
     { $match: { isDeleted: false, serviceProviderId: objectId } },
     { $group: { _id: "$status", count: { $sum: 1 } } },
   ]);
 
 
-  console.log("count data ==>>>> ", counts)
   const totalCounts = counts.reduce(
     (acc, cur) => ({ ...acc, [cur._id]: cur.count }),
     { pending: 0, inprogress: 0, completed: 0 } // matches current status enum
@@ -395,7 +394,6 @@ const acceptServiceOrder = async (
 
   const result = await order.save();
 
-  console.log("result =>>>> ", result)
 
 // ✅ Send email notification to client
 const technician = await User.findById(userId);

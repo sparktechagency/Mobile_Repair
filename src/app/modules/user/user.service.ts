@@ -258,7 +258,6 @@ const otpVerifyAndCreateUser = async ({
               await session.abortTransaction();
               session.endSession();
 
-              console.log("error =>>>> ", error);
               throw new AppError(httpStatus.BAD_REQUEST, "User creation failed");
             }
 };
@@ -356,7 +355,6 @@ const updateUser = async (userId: string, payload: Partial<TUser>) => {
     );
     if (fs.existsSync(oldFilePath)) {
       fs.unlinkSync(oldFilePath);
-      console.log(`🗑️ Deleted old image: ${oldFilePath}`);
     }
   }
 
