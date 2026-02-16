@@ -19,7 +19,7 @@ interface OtpSendEmailParams {
 
 
 const logoUrl = config.logo_url || 'https://res.cloudinary.com/dns84qf2p/image/upload/v1770783068/mobile_repair_pf3soi.png';
-const primaryColor = config.primary_color || '#C70039';
+const primaryColor = config.primary_color || '#081F2D';
 const supportEmail =
   config.support_email || `support@${config.project_name}.com`;
 

@@ -1,3 +1,45 @@
+// import nodemailer from 'nodemailer';
+
+
+// const isProduction = false;
+
+// export const sendEmail = async (to: string, subject: string, html: string) => {
+
+// const transporter = nodemailer.createTransport({
+//   host: "smtp.hostinger.com", // sending SMTP server
+//   port: isProduction ? 465 : 587,             // SSL port
+//   secure: isProduction,           // true for port 465
+//   auth: {
+//     user: "info@engrosbasen.dk",        // webmail email
+//     pass: "Engrosbasen2025@"   // SMTP/webmail password
+//   },
+//   tls: {
+//       rejectUnauthorized: false // <-- add this
+//     }
+// });
+
+  
+
+//   try {
+//      console.log('mail send started');
+//     await transporter.sendMail({
+//       from: `"Engrosbasen Team" <info@engrosbasen.dk>`, // sender address
+//       to, // list of receivers
+//       subject,
+//       html, // html body
+//     });
+
+//     console.log('mail sended successfully');
+    
+//   } catch (error) {
+//     console.log('send mail error:', error);
+    
+//   }
+//   console.log('mail sended stopped');
+// };
+
+
+
 import nodemailer from 'nodemailer';
 import config from '../config';
 

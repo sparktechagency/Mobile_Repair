@@ -73,6 +73,10 @@ const otpMatch = async (email: string, purpose: string, otp: string) => {
   return isOtpMatch;
 };
 
+export const deleteOtpsByEmail = async (email: string) => {
+  return Otp.deleteMany({ email });
+};
+
 const updateOtpByEmail = async (
   email: string,
   purpose: string,
@@ -133,6 +137,7 @@ const resendOtpEmail = async ({ token,purpose }: { token: string, purpose: strin
 
 export const otpServices = {
   createOtp,
+  deleteOtpsByEmail,
   checkOtpByEmail,
   checkOtpByNumber,
   otpMatch,

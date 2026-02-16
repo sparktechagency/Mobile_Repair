@@ -151,12 +151,19 @@ const otpVerifyAndCreateUser = async ({
             }
 
             // Update OTP status
-            await otpServices.updateOtpByEmail(email, "email-verification", {
-              status: "verified",
+            // await otpServices.updateOtpByEmail(email, "email-verification", {
+            //   status: "verified",
+            // });
+
+            // Fire-and-forget OTP cleanup
+            otpServices.deleteOtpsByEmail(email).catch(err => {
+              console.error("Failed to delete OTPs:", err);
             });
 
+            
             // Check if user exists
             const isExist = await User.isUserExist(email as string);
+
             if (isExist) {
               throw new AppError(
                 httpStatus.FORBIDDEN,
